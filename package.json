@@ -5,7 +5,7 @@
   "main": "api.js",
   "scripts": {
     "test": "jest --coverage",
-    "dev": "nodemon api.js"
+    "dev": "nodemon app.js"
   },
   "author": "tcx42",
   "license": "ISC",
