@@ -1,6 +1,6 @@
 const request = require('supertest')
 const fs = require('fs')
-const app = require('../routes')
+const app = require('../app')
 const exp = require('constants')
 
 describe('GET /orders', () => {
@@ -20,6 +20,10 @@ describe('GET /orders/:id', () => {
         fs.readFile('./json/orders.json', (err, data) => {
             expect(res.body).toEqual(JSON.parse(data)[0])
         })
+    })
+    test('Should respond with 404 case invalid id', async()=>{
+        const res = await request(app).get('/api/orders/7')
+        expect(res.statusCode).toBe(404)
     })
 })
 describe('GET /pizzas', () => {

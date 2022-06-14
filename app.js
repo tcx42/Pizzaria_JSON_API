@@ -17,11 +17,9 @@ app.route('/api/orders/:id')
         const { id } = req.params;
         fs.readFile('./json/orders.json', (err, data) => {
             if (err) return console.log(err)
-            JSON.parse(data).forEach(element => {
-                if (element.id === parseInt(id)) {
-                    return res.status(200).send(element)
-                }
-            })
+            const order = JSON.parse(data).find(e => e.id === parseInt(id, 10))
+            if(order === undefined) return res.status(404).send()
+            res.status(200).send(order)
         })
     })
 
