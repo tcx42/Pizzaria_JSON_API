@@ -10,7 +10,8 @@
   "author": "tcx42",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.1"
+    "express": "^4.18.1",
+    "sqlite3": "^5.0.8"
   },
   "devDependencies": {
     "@types/jest": "^28.1.1",
