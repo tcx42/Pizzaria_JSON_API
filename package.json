@@ -4,19 +4,20 @@
   "description": "backend challenge, pizzeria JSON API",
   "main": "api.js",
   "scripts": {
-    "test": "jest --coverage",
-    "dev": "nodemon app.js"
+    "test": "jest --detectOpenHandles --coverage",
+    "dev": "node app.js",
+    "setTestDB": "sqlite3 data.db .dump > tests/testData.sql"
   },
   "author": "tcx42",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.1",
+    "sqlite": "^4.1.1",
     "sqlite3": "^5.0.8"
   },
   "devDependencies": {
-    "@types/jest": "^28.1.1",
+    "@types/jest": "^28.1.3",
     "jest": "^28.1.1",
-    "nodemon": "^2.0.16",
     "supertest": "^6.2.3"
   },
   "jest": {
@@ -24,5 +25,17 @@
     "coveragePathIgnorePatterns": [
       "/node_modules"
     ]
-  }
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcx42/Pizzaria_JSON_API.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/tcx42/Pizzaria_JSON_API/issues"
+  },
+  "homepage": "https://github.com/tcx42/Pizzaria_JSON_API#readme"
 }

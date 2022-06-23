@@ -1,27 +1,27 @@
 [
     {
         "id": 1,
-        "item": [
+        "items": [
             {
                 "pizza": "Bufala",
-                "qtd": 1
+                "quantity": 1
             },
             {
                 "pizza": "Diavola",
-                "qtd": 2
+                "quantity": 2
             }
         ]
     },
     {
         "id": 2,
-        "item": [
+        "items": [
             {
                 "pizza": "Pizza Bianca",
-                "qtd": 2
+                "quantity": 2
             },
             {
                 "pizza": "Margherita",
-                "qtd": 1
+                "quantity": 1
             }
         ]
     }
