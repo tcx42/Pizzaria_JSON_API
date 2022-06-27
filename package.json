@@ -2,7 +2,7 @@
   "name": "pizzeria",
   "version": "1.0.0",
   "description": "backend challenge, pizzeria JSON API",
-  "main": "api.js",
+  "main": "app.js",
   "scripts": {
     "test": "jest --detectOpenHandles --coverage",
     "dev": "node app.js",
