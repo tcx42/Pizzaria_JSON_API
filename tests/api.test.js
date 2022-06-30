@@ -1,7 +1,6 @@
 const request = require('supertest')
 const api = require('../src/api')
-const knexfile = require('../knexfile')
-const knex = require('knex')(knexfile['development'])
+const knex = require('../src/database')
 
 afterAll(() => {
     knex.destroy();
