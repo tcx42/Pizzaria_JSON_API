@@ -1,58 +1,57 @@
 const request = require('supertest')
-const fs = require('fs/promises')
-const api = require('../api')
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(':memory:', sqlite3.OPEN_READWRITE, err => { if (err) return console.error(err) })
+const api = require('../src/api')
+const knexfile = require('../knexfile')
+const knex = require('knex')(knexfile['development'])
 
-beforeAll(async () => {
-    try {
-        const sql = (await fs.readFile('./tests/testData.sql')).toString()
-        db.exec(sql, err => { if (err) return console.error(err) })
-    } catch (error) {
-        console.error(error)
-    }
-})
 afterAll(() => {
-    db.close(err => { if (err) return console.error(err) });
+    knex.destroy();
 })
 
 describe('GET /orders', () => {
     test('should respond with a list of orders', async () => {
-        const res = await request(api).get('/api/orders')
-        db.all(`SELECT orders.id, pizzas.name, items.quantity FROM orders
-        JOIN items on orders.id = items.order_id
-        JOIN pizzas on items.pizza = pizzas.id ORDER BY orders.id ASC`, (err, rows) => {
-            if (err) return console.error(err);
-            let orders = Array.from(new Set(rows.map((r) => {
-                return r.id;
-            })));
-            for (let i = 0, j = 0; i < rows.length; i++) {
-                if (orders[j] == rows[i].id) {
-                    orders[j] = ({ 'id': rows[i].id, 'items': [{ 'pizza': rows[i].name, 'quantity': rows[i].quantity }] })
-                    j++;
-                } else {
-                    orders[j - 1].items.push({ 'pizza': rows[i].name, 'quantity': rows[i].quantity })
+        try {
+            const res = await request(api).get('/api/orders')
+            const rows = await knex.select('orders.id', 'pizzas.name', 'items.quantity').from('orders')
+                .join('items', 'orders.id', '=', 'items.order_id')
+                .join('pizzas', 'items.pizza_id', '=', 'pizzas.id')
+                .orderBy('orders.id', 'asc')
+            let orders = new Array();
+            let i = 0;
+            let currentOrderIndex = 0;
+            while (i < rows.length) {
+                orders.push({ 'id': rows[i].id, 'items': [] })
+                let currentOrder = rows[i].id;
+                while ((i < rows.length) && (currentOrder === rows[i].id)) {
+                    orders[currentOrderIndex].items.push({ 'pizza': rows[i].name, 'quantity': rows[i].quantity })
+                    i++;
                 }
+                currentOrderIndex++;
             }
             expect(res.statusCode).toBe(200)
             expect(res.body).toBeDefined
             expect(orders).toBeDefined
             expect(res.body).toEqual(orders)
-        })
+        } catch (error) {
+            console.error(error)
+        }
     })
 })
 describe('GET /orders/:id', () => {
     test('should respond with details of an order', async () => {
-        const res = await request(api).get('/api/orders/1')
-        db.all(`SELECT orders.id, pizzas.name, items.quantity FROM orders
-        JOIN items on orders.id = items.order_id
-        JOIN pizzas on items.pizza = pizzas.id WHERE orders.id = 1`, (err, rows) => {
+        try {
+            const res = await request(api).get('/api/orders/1')
+            const rows = await knex.select('orders.id', 'pizzas.name', 'items.quantity').from('orders')
+                .join('items', 'orders.id', '=', 'items.order_id')
+                .join('pizzas', 'items.pizza_id', '=', 'pizzas.id')
+                .where('orders.id', 1)
             let order = { 'id': rows[0].id, 'items': [] };
             for (let i = 0; i < rows.length; i++) {
                 order.items.push({ 'pizza': rows[i].name, 'quantity': rows[i].quantity })
             }
             expect(res.body).toEqual(order)
-        })
+        } catch (error) {
+            console.error(error)
+        }
     })
     test('Should respond with 404 case invalid id', async () => {
         const res = await request(api).get('/api/orders/7')
@@ -61,13 +60,14 @@ describe('GET /orders/:id', () => {
 })
 describe('GET /pizzas', () => {
     test('should respond with a list of pizzas', async () => {
-        const res = await request(api).get('/api/pizzas')
-        expect(res.statusCode).toBe(200)
-        db.all(`SELECT pizzas.id, pizzas.name, pizzas.price, ingredients.ingredient FROM pizzas
-        JOIN pizza_ingredients on pizzas.id = pizza_ingredients.pizza_id 
-        JOIN ingredients on pizza_ingredients.ingredient_id = ingredients.id
-        ORDER BY pizzas.id ASC;`, (err, rows) => {
-            if (err) return console.error(err);
+        try {
+            const res = await request(api).get('/api/pizzas')
+            expect(res.statusCode).toBe(200)
+            const rows = await knex.select('pizzas.id', 'pizzas.name', 'pizzas.price', 'ingredients.ingredient')
+                .from('pizzas')
+                .join('pizza_ingredients', 'pizzas.id', '=', 'pizza_ingredients.pizza_id')
+                .join('ingredients', 'pizza_ingredients.ingredient_id', '=', 'ingredients.id')
+                .orderBy('pizzas.id', 'asc')
             let pizzas = new Array();
             let i = 0;
             let currentPizzaIndex = 0;
@@ -84,6 +84,8 @@ describe('GET /pizzas', () => {
             expect(res.body).toBeDefined
             expect(pizzas).toBeDefined
             expect(res.body).toEqual(pizzas)
-        })
+        } catch (error) {
+            console.error(error)
+        }
     })
 })

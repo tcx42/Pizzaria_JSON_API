@@ -5,13 +5,14 @@
   "main": "app.js",
   "scripts": {
     "test": "jest --detectOpenHandles --coverage",
-    "dev": "node app.js",
-    "setTestDB": "sqlite3 data.db .dump > tests/testData.sql"
+    "dev": "node src/app.js",
+    "setTestDB": "npx knex migrate:latest && npx knex seed:run"
   },
   "author": "tcx42",
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.1",
+    "knex": "^2.1.0",
     "sqlite": "^4.1.1",
     "sqlite3": "^5.0.8"
   },
