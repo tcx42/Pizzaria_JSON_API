@@ -1,90 +1,127 @@
 const request = require('supertest')
-const api = require('../src/api')
+const api = require('../src/routes')
 const knex = require('../src/database')
 
+const orderMatch = {
+    'id': expect.any(Number),
+    'table_number': expect.any(Number),
+    'items': expect.arrayContaining([{
+        'pizza': expect.stringMatching(new RegExp(/(\w)*/)),
+        'quantity': expect.any(Number)
+    }])
+}
+const ordersArrayMatch = expect.arrayContaining([orderMatch])
+const orderSample = [
+    {
+        'table_number': 4,
+        'items': [
+            {
+                'pizza': 'Romana',
+                'quantity': 1
+            },
+            {
+                'pizza': 'Margherita',
+                'quantity': 2
+            }
+        ]
+    },
+    {
+        'table_number': 3,
+        'items': [
+            {
+                'pizza': 'Bufala',
+                'quantity': 1
+            },
+            {
+                'pizza': 'Pizza Bianca',
+                'quantity': 1
+            }
+        ]
+    }
+]
+const ingredientMatch = expect.stringMatching(new RegExp(/(\w)*/))
+const pizzaMatch = {
+    'name': expect.stringMatching(new RegExp(/(\w)*/)),
+    'price': expect.any(Number),
+    'ingredients': expect.arrayContaining([ingredientMatch])
+}
+const pizzasArrayMatch = expect.arrayContaining([pizzaMatch])
 afterAll(() => {
-    knex.destroy();
+    knex.destroy()
 })
 
-describe('GET /orders', () => {
-    test('should respond with a list of orders', async () => {
-        try {
-            const res = await request(api).get('/api/orders')
-            const rows = await knex.select('orders.id', 'pizzas.name', 'items.quantity').from('orders')
-                .join('items', 'orders.id', '=', 'items.order_id')
-                .join('pizzas', 'items.pizza_id', '=', 'pizzas.id')
-                .orderBy('orders.id', 'asc')
-            let orders = new Array();
-            let i = 0;
-            let currentOrderIndex = 0;
-            while (i < rows.length) {
-                orders.push({ 'id': rows[i].id, 'items': [] })
-                let currentOrder = rows[i].id;
-                while ((i < rows.length) && (currentOrder === rows[i].id)) {
-                    orders[currentOrderIndex].items.push({ 'pizza': rows[i].name, 'quantity': rows[i].quantity })
-                    i++;
-                }
-                currentOrderIndex++;
-            }
-            expect(res.statusCode).toBe(200)
-            expect(res.body).toBeDefined
-            expect(orders).toBeDefined
-            expect(res.body).toEqual(orders)
-        } catch (error) {
-            console.error(error)
-        }
+describe('/orders', () => {
+    describe('GET', () => {
+        test('Responds with an array of Orders', async () => {
+            const res = await request(api).get('/api/orders');
+            expect(res.body).toMatchObject(ordersArrayMatch)
+        })
+    })
+    describe('POST', () => {
+        test('Responds with an array of Orders added', async () => {
+            const res = await request(api).post('/api/orders').send(orderSample);
+            expect(res.body).toMatchObject(ordersArrayMatch)
+            expect(res.body).toMatchObject(orderSample)
+        })
+        test('Responds with 400 case invalid body', async () => {
+            const res = await request(api).post('/api/orders').send([{ "table": 14 }]);
+            expect(res.status).toEqual(400)
+        })
+    })
+    describe('PUT', () => {
+        test('Responds with an array of Orders updated', async () => {
+
+        })
+    })
+    describe('DELETE', () => {
+        test('Responds with an array of Orders deleted', async () => {
+
+        })
     })
 })
-describe('GET /orders/:id', () => {
-    test('should respond with details of an order', async () => {
-        try {
+
+describe('/orders/:id', () => {
+    describe('GET', () => {
+        test('Responds with an order json object', async () => {
             const res = await request(api).get('/api/orders/1')
-            const rows = await knex.select('orders.id', 'pizzas.name', 'items.quantity').from('orders')
-                .join('items', 'orders.id', '=', 'items.order_id')
-                .join('pizzas', 'items.pizza_id', '=', 'pizzas.id')
-                .where('orders.id', 1)
-            let order = { 'id': rows[0].id, 'items': [] };
-            for (let i = 0; i < rows.length; i++) {
-                order.items.push({ 'pizza': rows[i].name, 'quantity': rows[i].quantity })
-            }
-            expect(res.body).toEqual(order)
-        } catch (error) {
-            console.error(error)
-        }
+            expect(res.body).toMatchObject(orderMatch)
+        })
+        test('Responds with 404 case invalid id', async () => {
+            const res = await request(api).get('/api/orders/900')
+            expect(res.status).toEqual(404)
+        })
     })
-    test('Should respond with 404 case invalid id', async () => {
-        const res = await request(api).get('/api/orders/7')
-        expect(res.statusCode).toBe(404)
+    describe('PUT', () => {
+        test('Responds with updated Order', async () => {
+
+        })
+    })
+    describe('DELETE', () => {
+        test('Responds with deleted Order', async () => {
+
+        })
     })
 })
-describe('GET /pizzas', () => {
-    test('should respond with a list of pizzas', async () => {
-        try {
-            const res = await request(api).get('/api/pizzas')
-            expect(res.statusCode).toBe(200)
-            const rows = await knex.select('pizzas.id', 'pizzas.name', 'pizzas.price', 'ingredients.ingredient')
-                .from('pizzas')
-                .join('pizza_ingredients', 'pizzas.id', '=', 'pizza_ingredients.pizza_id')
-                .join('ingredients', 'pizza_ingredients.ingredient_id', '=', 'ingredients.id')
-                .orderBy('pizzas.id', 'asc')
-            let pizzas = new Array();
-            let i = 0;
-            let currentPizzaIndex = 0;
-            while (i < rows.length) {
-                pizzas.push({ 'name': rows[i].name, 'price': rows[i].price, 'ingredients': [] })
-                let currentPizza = rows[i].id;
-                while (currentPizza === rows[i].id) {
-                    pizzas[currentPizzaIndex].ingredients.push(rows[i].ingredient);
-                    i++;
-                    if (i >= rows.length) break;
-                }
-                currentPizzaIndex++;
-            }
-            expect(res.body).toBeDefined
-            expect(pizzas).toBeDefined
-            expect(res.body).toEqual(pizzas)
-        } catch (error) {
-            console.error(error)
-        }
+describe('/pizzas', () => {
+    describe('GET', () => {
+        test('Responds with a list of pizzas', async () => {
+            const res = await request(api).get('/api/pizzas');
+            expect(res.body).toMatchObject(pizzasArrayMatch);
+        })
+    })
+    describe('POST', () => {
+        test('Responds with an array of added pizzas', async () => {
+
+        })
+    })
+    describe('PUT', () => {
+        test('Responds with an array of updated pizzas', async () => {
+
+        })
+    })
+    describe('DELETE', () => {
+        test('Responds with an array of deleted pizzas', async () => {
+
+        })
     })
 })
