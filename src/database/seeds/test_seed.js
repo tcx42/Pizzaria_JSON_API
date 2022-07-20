@@ -19,7 +19,7 @@ exports.seed = async function (knex) {
   await knex('ingredients').insert([
     { id: 1, ingredient: 'tomato' },
     { id: 2, ingredient: 'mozzarella' },
-    { id: 3, ingredient: 'mozarella di bufala' },
+    { id: 3, ingredient: 'mozzarella di bufala' },
     { id: 4, ingredient: 'anchovies' },
     { id: 5, ingredient: 'oregano' },
     { id: 6, ingredient: 'oil' },

@@ -4,7 +4,7 @@
   "description": "backend challenge, pizzeria JSON API",
   "main": "app.js",
   "scripts": {
-    "test": "jest --detectOpenHandles --coverage",
+    "test": "npx knex seed:run && jest --detectOpenHandles --coverage",
     "dev": "node src/app.js",
     "setTestDB": "npx knex migrate:latest && npx knex seed:run"
   },

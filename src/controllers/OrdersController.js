@@ -42,38 +42,59 @@ module.exports = {
 
     async newOrders(req, res, next) {
         try {
-            const orders = []
-            let result;
-            await knex.transaction(async trx => {
-                const pizzas = [];
-                for (const order of req.body) {
-                    for (const item of order.items) {
-                        pizzas.push(item.pizza)
-                    }
-                }
+            const rows = await knex.transaction(async trx => {
+                const pizzas = getPizzasNames(req.body)
                 const pizzasIds = await trx('pizzas').select('id', 'name').whereIn('name', pizzas)
+                const orders = [];
                 for (const order of req.body) {
                     const orderId = await trx('orders').insert({ 'table_number': order.table_number })
                     orders.push(orderId[0])
-                    await trx('items').insert(order.items.map(item => {
-                        const pizza = pizzasIds.find(pizza => pizza.name == item.pizza)
-                        if (!pizza) throw new ApiError(404, `Pizza name: ${item.pizza} not found`)
-                        return {
-                            'order_id': orderId,
-                            'pizza_id': pizza.id,
-                            'quantity': item.quantity
-                        }
-                    }))
+                    const itemsToInsert = listItems(order.items, orderId, pizzasIds)
+                    await trx('items').insert(itemsToInsert)
                 }
-                const rows = await trx.select('orders.id', 'orders.table_number', 'pizzas.name', 'items.quantity')
+                return await trx.select('orders.id', 'orders.table_number', 'pizzas.name', 'items.quantity')
                     .from('orders')
                     .join('items', 'orders.id', '=', 'items.order_id')
                     .join('pizzas', 'items.pizza_id', '=', 'pizzas.id')
                     .whereIn('orders.id', orders);
-                result = dbToJson(rows)
             })
-            res.status(201).json(result)
+            return res.status(201).json(dbToJson(rows))
         } catch (error) {
+            next(error)
+        }
+        function getPizzasNames(arr) {
+            const pizzas = [];
+            for (const order of arr) {
+                for (const item of order.items) {
+                    pizzas.push(item.pizza)
+                }
+            }
+            return pizzas;
+        }
+        function listItems(items, orderId, pizzasIds) {
+            const arr = items.map(item => {
+                const pizza = pizzasIds.find(pizza => pizza.name == item.pizza)
+                if (!pizza) throw new ApiError(404, `Pizza name: ${item.pizza} not found`)
+                return {
+                    'order_id': orderId,
+                    'pizza_id': pizza.id,
+                    'quantity': item.quantity
+                }
+            })
+            return arr;
+        }
+    },
+
+    async deleteOrders(req, res, next) {
+        try {
+            const { id } = req.params;
+            await knex.transaction(async trx => {
+                await trx('orders').where('id', id).del();
+                await trx('items').where('order_id', id).del();
+            })
+            return res.json(`Order ${id} deleted.`)
+        } catch (error) {
+            console.error(error)
             next(error)
         }
     }

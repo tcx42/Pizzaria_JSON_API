@@ -7,6 +7,7 @@ exports.up = function (knex) {
         table.primary('id')
         table.increments('id')
         table.text('ingredient')
+        table.unique('ingredient')
     })
 };
 

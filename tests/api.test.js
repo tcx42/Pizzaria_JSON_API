@@ -46,8 +46,14 @@ const pizzaMatch = {
     'ingredients': expect.arrayContaining([ingredientMatch])
 }
 const pizzasArrayMatch = expect.arrayContaining([pizzaMatch])
+
+var ordersIds;
+beforeAll(async () => {
+    ordersIds = (await knex('orders').select('id').orderBy('id', 'asc')).map(e => { return e.id });
+})
+
 afterAll(() => {
-    knex.destroy()
+    knex.destroy();
 })
 
 describe('/orders', () => {
@@ -62,20 +68,12 @@ describe('/orders', () => {
             const res = await request(api).post('/api/orders').send(orderSample);
             expect(res.body).toMatchObject(ordersArrayMatch)
             expect(res.body).toMatchObject(orderSample)
+            ordersIds.push(res.body[0].id)
+            ordersIds.push(res.body[1].id)
         })
         test('Responds with 400 case invalid body', async () => {
             const res = await request(api).post('/api/orders').send([{ "table": 14 }]);
             expect(res.status).toEqual(400)
-        })
-    })
-    describe('PUT', () => {
-        test('Responds with an array of Orders updated', async () => {
-
-        })
-    })
-    describe('DELETE', () => {
-        test('Responds with an array of Orders deleted', async () => {
-
         })
     })
 })
@@ -83,22 +81,18 @@ describe('/orders', () => {
 describe('/orders/:id', () => {
     describe('GET', () => {
         test('Responds with an order json object', async () => {
-            const res = await request(api).get('/api/orders/1')
+            const res = await request(api).get(`/api/orders/${ordersIds[0]}`)
             expect(res.body).toMatchObject(orderMatch)
         })
         test('Responds with 404 case invalid id', async () => {
-            const res = await request(api).get('/api/orders/900')
+            const res = await request(api).get(`/api/orders/0`)
             expect(res.status).toEqual(404)
         })
     })
-    describe('PUT', () => {
-        test('Responds with updated Order', async () => {
-
-        })
-    })
     describe('DELETE', () => {
-        test('Responds with deleted Order', async () => {
-
+        test('Responds with confirmation', async () => {
+            const res = await request(api).delete(`/api/orders/${ordersIds[ordersIds.length - 1]}`)
+            expect(res.status).toEqual(200)
         })
     })
 })
@@ -111,17 +105,58 @@ describe('/pizzas', () => {
     })
     describe('POST', () => {
         test('Responds with an array of added pizzas', async () => {
-
+            const pizzas = [{
+                'name': 'Salami',
+                'price': 35,
+                'ingredients': [
+                    'mozzarella',
+                    'spicy salami'
+                ]
+            },
+            {
+                'name': 'Mozarella',
+                'price': 25,
+                'ingredients': [
+                    'mozzarella',
+                    'mozzarella di bufala'
+                ]
+            }]
+            const res = await request(api).post('/api/pizzas').send(pizzas);
+            expect(res.body).toMatchObject(pizzasArrayMatch)
+        })
+        test('Responds with 400 case invalid body', async () => {
+            const res = await request(api).post('/api/orders').send([{ 'salami': 'pizza' }]);
+            expect(res.status).toEqual(400)
+        })
+        test('Responds with warning in case of already existing item', async () => {
+            const pizza = [{
+                'name': 'Bufala',
+                'price': 6,
+                'ingredients': [
+                    'tomato',
+                    'mozarella di bufala'
+                ]
+            }]
+            const res = await request(api).post('/api/pizzas').send(pizza);
+            expect(res.status).toEqual(400)
         })
     })
+})
+describe('/pizzas/:id', () => {
     describe('PUT', () => {
-        test('Responds with an array of updated pizzas', async () => {
-
+        test('Responds with an updated pizza', async () => {
+            const pizza = {
+                'name': 'Romanina',
+                'price': 5
+            }
+            const res = await request(api).put(`/api/pizzas/3`).send(pizza)
+            expect(res.body).toMatchObject(pizzaMatch)
         })
     })
     describe('DELETE', () => {
-        test('Responds with an array of deleted pizzas', async () => {
-
+        test('Responds with confirmation', async () => {
+            const res = await request(api).delete(`/api/pizzas/3`)
+            expect(res.status).toEqual(200)
         })
     })
 })
